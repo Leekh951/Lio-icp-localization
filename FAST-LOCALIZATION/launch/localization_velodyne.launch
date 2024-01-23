@@ -1,0 +1,36 @@
+<launch>
+  <!-- Launch file for velodyne16 VLP-16 LiDAR -->
+
+    <arg name="rviz" default="true" />
+
+    <rosparam command="load" file="$(find fast_lio_localization)/config/velodyne.yaml" />
+
+    <param name="feature_extract_enable" type="bool" value="0"/>
+    <param name="point_filter_num" type="int" value="4"/>
+    <param name="max_iteration" type="int" value="3" />
+    <param name="filter_size_surf" type="double" value="0.5" />
+    <param name="filter_size_map" type="double" value="0.5" />
+    <param name="cube_side_length" type="double" value="1000" />
+    <param name="runtime_pos_log_enable" type="bool" value="0" />
+    <param name="pcd_save_enable" type="bool" value="0" />
+    <node pkg="fast_lio_localization" type="fastlio_mapping" name="laserMapping" output="screen" />
+
+    <arg name="map" default="/home/lee/lio_loc/scans.pcd" />
+    <!-- loalization-->
+    <node pkg="fast_lio_localization" type="global_localization.py" name="global_localization" output="screen" />
+
+    <!-- transform  fusion-->
+    <node pkg="fast_lio_localization" type="transform_fusion.py" name="transform_fusion" output="screen" />
+    <!-- Define static transformation for map frame -->
+    <!-- <node pkg="tf" type="static_transform_publisher" name="map_transform" args="-417.6195511179997 903.6885174906914 0 -4.1000291187947155 0 0 map1 map 100" /> -->
+    <node pkg="tf" type="static_transform_publisher" name="map_transform" args="-78.20671953129448 1426.3517489884061 0 -2.260932669816205 0 0 map1 map 100" />
+    <!-- glbal map-->
+    <node pkg="pcl_ros" type="pcd_to_pointcloud" name="map_publisher" output="screen"
+          args="$(arg map) 5 _frame_id:=map cloud_pcd:=/map" />
+
+
+    <group if="$(arg rviz)">
+      <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find fast_lio_localization)/rviz_cfg/localization.rviz" />
+    </group>
+    <node pkg="fast_lio_localization" type="publish_initial_pose.py" name="publish_initial_pose" respawn="true" /> 
+</launch>
